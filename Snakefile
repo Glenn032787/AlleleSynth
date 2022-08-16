@@ -25,11 +25,12 @@ rule generatingAltGenome:
 		#snp_count=55000
 		snp_count=2500000
 	log: "output/{prefix}/log/generatingAltGenome_{num}.log"
+	singularity: "docker://simug_1.0.0--hdfd78af_1.sif:1.0.0--hdfd78af_1"
 	shell:
 		"""
 		mkdir -p output/{wildcards.prefix}/genome
 		
-		perl scripts/simuG/simuG.pl \
+		simuG \
 			-refseq {input} \
 			-snp_count {params.snp_count} \
 			-prefix output/{wildcards.prefix}/genome/allele{wildcards.num} &> {log}
