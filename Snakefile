@@ -1,10 +1,13 @@
 configfile: "config/config.yaml"
 configfile: "config/params.yaml"
 
+# samples =  ["simF1", "simF2", "simF3", "simF4", "simF5"]
+samples = ["test"]
+
 rule all:
 	input:
 		expand("output/{name}/final/{file}", 
-			name = ["sim6A", "sim6B", "sim6C"],
+			name = samples,
 			file = ["pseudoalignments.bam", "phased.vcf", "expressionMatrix.tsv"])
 
 
@@ -19,7 +22,8 @@ rule generatingAltGenome:
 		genome = "output/{prefix}/genome/allele{num}.fa", 
 		vcf = "output/{prefix}/genome/allele{num}.refseq2simseq.SNP.vcf"
 	params: 
-		snp_count=45000
+		#snp_count=55000
+		snp_count=2500000
 	log: "output/{prefix}/log/generatingAltGenome_{num}.log"
 	shell:
 		"""
@@ -29,129 +33,13 @@ rule generatingAltGenome:
 			-refseq {input} \
 			-snp_count {params.snp_count} \
 			-prefix output/{wildcards.prefix}/genome/allele{wildcards.num} &> {log}
-		#-gene_gff /projects/koneill_scratch/pog_tmp/ref/Homo_sapiens.GRCh38.100.chr.gff3.gz 
-		#-coding_partition_for_snp_simulation coding &> {log} 
-		sed 's/^>/>chr/' output/{wildcards.prefix}/genome/allele{wildcards.num}.simseq.genome.fa > {output.genome}
-		awk -v OFS="\t" '/^#/ {{print $0; next}} {{$1 = "chr"$1 ; print $0}}' {output.vcf} > {output.vcf}.tmp && mv {output.vcf}.tmp {output.vcf}
+		
+		mv output/{wildcards.prefix}/genome/allele{wildcards.num}.simseq.genome.fa {output.genome}
 		"""	
-
-
-# ============================================
-# Generating allelic RNA read
-# ============================================
-#rule sortBedFile:
-#	input: config["annotation_bedfile"]
-#	output: "output/{prefix}/simRNA/annotation.sorted.bed"
-#	log: "output/{prefix}/log/sortBedFile.log"
-#	shell:
-#		"""
-#		mkdir -p output/{wildcards.prefix}/simRNA
-#		sort -k 1,1 -k 2,2n {input} > {output} 2> {log}
-#		"""
-#
-#rule generateExpressionProfile:
-#	input: "output/{prefix}/simRNA/annotation.sorted.bed"
-#	output: "output/{prefix}/simRNA/explvprofile.txt"
-#	log: "output/{prefix}/log/generateExpressionProfile.log"
-#	shell:
-#		"""
-#		scripts/RNASeqReadSimulator/genexplvprofile.py -e 4,4 {input} > {output} 2> {log}
-#		"""
-#
-#rule allelicExpressionProfile: 
-#	input: "output/{prefix}/simRNA/explvprofile.txt"
-#	output: 
-#		"output/{prefix}/simRNA/allele1.explvprofile.txt",
-#		"output/{prefix}/simRNA/allele2.explvprofile.txt",
-#		"output/{prefix}/final/ASEGene.txt"
-#	params:
-#		ASEgene = 1000
-#	log: "output/{prefix}/log/allelicExpressionProfile.log"
-#	shell:
-#		"""
-#		mkdir -p output/{wildcards.prefix}/final
-#		scripts/generateAllelicExpressionProfile.R -e {input} -n {params.ASEgene} -o output/{wildcards.prefix}/simRNA &> {log}
-#		mv output/{wildcards.prefix}/simRNA/knownASE.txt output/{wildcards.prefix}/final/ASEGene.txt
-#		"""
-#
-#rule generateAlleleBed: 
-#	input: 
-#		bedfile="output/{prefix}/simRNA/annotation.sorted.bed",
-#		expressionProfile="output/{prefix}/simRNA/allele{num}.explvprofile.txt"
-#	output: "output/{prefix}/simRNA/allele{num}.bed"
-#	params:
-#		numRead=50000000//2,
-#		readLength=200
-#	log: "output/{prefix}/log/generateAlleleBed_{num}.log"
-#	shell:
-#		"""
-#		mkdir -p output/{wildcards.prefix}/simRNA/reads/
-#		scripts/RNASeqReadSimulator/gensimreads.py \
-#			-e {input.expressionProfile} \
-#			-n {params.numRead} \
-#			-l {params.readLength} \
-#			-p 200,20 \
-#			{input.bedfile} > {output} 2> {log}
-#		"""
-#
-#rule generateAlleleReadFasta:  
-#	input: 
-#		genome = "output/{prefix}/genome/allele{num}.fa",
-#		bed = "output/{prefix}/simRNA/allele{num}.bed"
-#	output: "output/{prefix}/simRNA/reads/allele{num}.fa"
-#	params:
-#		readLength=100
-#	log: "output/{prefix}/log/generateAlleleReadFasta_{num}.log"
-#	shell:
-#		"""
-#		scripts/RNASeqReadSimulator/getseqfrombed.py \
-#			-f A -r 0.1 \
-#			-l {params.readLength} \
-#			{input.bed} \
-#			{input.genome} > {output} 2> {log}
-#		"""
-#
-#rule splitFasta:
-#        input: "output/{prefix}/simRNA/reads/allele{num}.fa"
-#        output:
-#                "output/{prefix}/simRNA/reads/allele{num}_1.fa",
-#                "output/{prefix}/simRNA/reads/allele{num}_2.fa"
-#        log: "output/{prefix}/log/splitFasta_{num}.log"
-#        shell:
-#                """
-#                scripts/RNASeqReadSimulator/splitfasta.py -o output/{wildcards.prefix}/simRNA/reads/allele{wildcards.num} < {input}
-#                """
-#
-#rule catReads:
-#        input:
-#                R1 = expand("output/{{prefix}}/simRNA/reads/allele{num}_1.fa", num=[1,2]),
-#                R2 = expand("output/{{prefix}}/simRNA/reads/allele{num}_2.fa", num=[1,2])
-#        output:
-#                R1 = "output/{prefix}/final/rnaReads_R1.fa",
-#                R2 = "output/{prefix}/final/rnaReads_R2.fa"
-#        log: "output/{prefix}/log/catReads.log"
-#        shell:
-#                """
-#                cat {input.R1} > {output.R1} 2> {log}
-#                cat {input.R2} > {output.R2} 2> {log}
-#                """
 
 #########################
 # Generate allelic read 2
 #########################
-
-#rule getTranscriptome:
-#	input: 
-#		genome = "output/{prefix}/genome/allele{num}.fa",
-#		transcriptomeBed = config["annotation_bedfile"]
-#	output: "output/{prefix}/transcriptome/allele{num}.cDNA.fa"
-#	singularity: "docker://quay.io/biocontainers/bedtools:2.23.0--h5b5514e_6"
-#	log: "output/{prefix}/log/getTranscriptome_{num}.log"
-#	shell:
-#		"""
-#		mkdir -p output/{wildcards.prefix}/transcriptome
-#		bedtools getfasta -fi {input.genome} -bed {input.transcriptomeBed} -name -fo {output} &> {log}
-#		"""	
 
 rule getTranscriptome:
 	input:
@@ -171,21 +59,20 @@ rule getTranscriptome:
 rule cutNTranscriptome:
 	input: "output/{prefix}/transcriptome/allele{num}.cDNA.fa"
 	output: "output/{prefix}/transcriptome/allele{num}.cDNA.cutN.fa"
-	singularity: "docker://quay.io/biocontainers/seqtk:1.3--h7132678_4"
 	log: "output/{prefix}/log/cutNTranscriptome_{num}.log"
 	shell:
-		"seqtk cutN {input} > {output} 2> {log}"
+		"sed '/^>/! s/N//g' {input} > {output} 2> {log}"
 
 rule generateExpressionProfile:
 	input: "output/{prefix}/transcriptome/allele1.cDNA.cutN.fa"
 	output: 
 		"output/{prefix}/simRNA/allele1/expressionProfile.rds",
 		"output/{prefix}/simRNA/allele2/expressionProfile.rds",
-		"output/{prefix}/simRNA/ASEGene.txt"
+		"output/{prefix}/simRNA/expressedGene.tsv"
 	params:
-		numASE = 100,
-		foldChange = 6,
-		percentExpressed = 0.8,
+		numASE = 500,
+		foldChange = 10,
+		percentExpressed = 0.1,
 		depth = 10
 	log: "output/{prefix}/log/generateExpressionProfile.log"
 	shell:
@@ -200,6 +87,8 @@ rule generateExpressionProfile:
 			-e {params.percentExpressed} \
 			-d {params.depth} \
 			-o output/{wildcards.prefix}/simRNA &> {log}
+		
+		cp output/{wildcards.prefix}/simRNA/expressedGene.tsv output/{wildcards.prefix}/final/expressedGene.tsv
 		"""
 
 rule simulateReadPolyester: 

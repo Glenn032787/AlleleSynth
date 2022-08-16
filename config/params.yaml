@@ -1,6 +1,5 @@
 kalliso_index:
         "/projects/glchang_prj/ref/kallisto/hg38_ensembl100" # Generated from "kallisto index" on cDNA
-        #"/projects/glchang_prj/ref/kallisto/hg38_chr22"
 gtf_annotation:        
         "/projects/alignment_references/Homo_sapiens/hg38_no_alt/annotations/ensembl100/Homo_sapiens.GRCh38.100.remapped.gtf"
 chrom_length:
