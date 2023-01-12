@@ -1,3 +1,5 @@
 **/.snakemake/
 **/output/
 .nfs*
+**/.keras/
+**/.parallel/
