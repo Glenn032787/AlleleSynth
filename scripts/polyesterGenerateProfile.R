@@ -18,7 +18,11 @@ option_list = list(
   make_option(c("-o", "--outdir"), type="character", default = "mBASED",
               help="Output directory name", metavar="character"),
   make_option(c("-d", "--depth"), type="integer", default = 10,
-              help="Read Depth", metavar="character")
+              help="Read Depth", metavar="character"),
+  make_option(c("-c", "--convert"), type="character", default = NULL,
+              help="Gene to Transcript TSV", metavar="character"),
+  make_option(c("-s", "--nosnp"), type="character", default = NULL,
+              help="Bed file of gene with no SNP", metavar="character")
 )
 
 # load in options
@@ -30,37 +34,70 @@ numASE <- opt$numASE
 foldChange <- opt$fold
 percentExpressed <- opt$expressed
 depth <- opt$depth
+convert <- opt$convert
+nosnp_path <- opt$nosnp
 
+# Read in transcriptome
 fasta <- readDNAStringSet(transcriptome)
+nosnp <- read_delim(nosnp_path, show_col_types = F, col_names = F) %>%
+  pull(X4)
 
+# Generate baseline expression matrix (based on length)
 fold_changes1 = matrix(1, nrow=length(fasta))
 fold_changes2 = matrix(1, nrow=length(fasta))
 
 readspertx <- round(depth * width(fasta) / 100)
 
-random_gene <- sample(fasta, length(fasta)*(percentExpressed))
+# Get transcript to gene table
+transcriptGene <- tibble(original = names(fasta)) %>%
+  separate(original, sep = " ", into=c("transcript", "cds"), fill = "right", remove = F) %>%
+  dplyr::select(original, transcript)
 
-random <- match(random_gene,fasta)
-ASE1 <- random[1:(numASE %/% 2)]
-ASE2 <- random[(numASE %/% 2 + 1) : numASE]
-Exp <- random[(numASE + 1):length(random)]
+convertList <- read_delim(convert) %>%
+  dplyr::filter(transcript %in% transcriptGene$transcript) %>%
+  left_join(transcriptGene) %>%
+  dplyr::filter(!(hgnc_symbol %in% nosnp))
 
-fold_changes1[Exp] = readspertx[Exp] 
-fold_changes1[ASE1] = readspertx[ASE1] * foldChange
-fold_changes1[ASE2] = readspertx[ASE2]
+# Randomly select genes to express and ASE
+genelst <- pull(convertList, hgnc_symbol) %>% unique()
+random_gene <- sample(genelst, length(genelst)*(percentExpressed))
 
-fold_changes2[Exp] = readspertx[Exp] 
-fold_changes2[ASE1] = readspertx[ASE1]
-fold_changes2[ASE2] = readspertx[ASE2] * foldChange
+ASE1_gene <- random_gene[1:(numASE %/% 2)]
+ASE2_gene <- random_gene[(numASE %/% 2 + 1) : numASE]
+Exp_gene <- random_gene[(numASE + 1):length(random_gene)]
 
-ASEGenes <- tibble(expressedGene = random_gene[1:numASE]@ranges@NAMES) %>%
-  separate(col = expressedGene, sep = ":", into = c("transcript", 'length'))
+# Convert randomly selected gene to transcript 
+convert <- function(database, aseGene) {
+  database %>%
+    dplyr::filter(hgnc_symbol %in% aseGene) %>%
+    pull(original)
+}
 
-expressedGene <- random_gene[1:length(random)]@ranges@NAMES
-expressGeneTibble <- tibble(expressedGene) %>%
-  separate(col = expressedGene, sep = ":", into = c("transcript", 'length')) %>%
-  dplyr::mutate(ASE = transcript %in% ASEGenes$transcript) 
+ASE1_transcript <- convert(convertList, ASE1_gene)
+ASE2_transcript <- convert(convertList, ASE2_gene)
+Exp_transcript <- convert(convertList, Exp_gene)
+
+
+ASE1_ID <- match(ASE1_transcript,fasta@ranges@NAMES)
+ASE2_ID <- match(ASE2_transcript,fasta@ranges@NAMES)
+Exp_ID <- match(Exp_transcript,fasta@ranges@NAMES)
+
+# Change expression matrix for allele 1 and 2
+fold_changes1[Exp_ID] = readspertx[Exp_ID] 
+fold_changes1[ASE1_ID] = readspertx[ASE1_ID] * foldChange
+fold_changes1[ASE2_ID] = readspertx[ASE2_ID]
+
+fold_changes2[Exp_ID] = readspertx[Exp_ID] 
+fold_changes2[ASE1_ID] = readspertx[ASE1_ID]
+fold_changes2[ASE2_ID] = readspertx[ASE2_ID] * foldChange
+
+# Save ASE list and expression matrix 
+expressedGene <- convertList %>%
+  dplyr::filter(hgnc_symbol %in% random_gene) %>%
+  dplyr::mutate(ASE = hgnc_symbol %in% c(ASE1_gene, ASE2_gene)) %>%
+  dplyr::select(-original)
+
 
 saveRDS(c(fold_changes1), paste0(out, "/allele1/expressionProfile.rds"))
 saveRDS(c(fold_changes2), paste0(out, "/allele2/expressionProfile.rds"))
-write.table(expressGeneTibble, paste0(out, "/expressedGene.tsv"), row.names = F, col.names = T, quote = F)
+write.table(expressedGene, file = paste0(out, "/expressedGene.tsv"), row.names = F, col.names = T, quote = F, sep="\t")

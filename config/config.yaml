@@ -1,5 +1,5 @@
 ref_genome:
-    "/gsc/resources/Homo_sapiens_genomes/hg38_no_alt/genome/fasta/hg38_no_alt.fa"
+    "ref/hg38_no_alt.fa"
     #"ref/chr22.fa"
 nanosim_model:
     "/projects/glchang_prj/software/NanoSim/pre-trained_models/human_NA12878_DNA_FAB49712_guppy/training"
