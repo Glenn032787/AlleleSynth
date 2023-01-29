@@ -1,10 +1,10 @@
 configfile: "config/config.yaml"
 configfile: "config/params.yaml"
 
-samples = ["simGene_2"]
+samples = ["test"]
 
-#ruleorder: clair3 > mergePhasedVCF
-ruleorder: mergePhasedVCF > clair3
+ruleorder: clair3 > mergePhasedVCF
+#ruleorder: mergePhasedVCF > clair3
 
 ruleorder: waspFilter > kalliso
 ruleorder: rsemExpressionMatrix > expressionMatrix
@@ -20,15 +20,39 @@ rule all:
 # Generate genomes of both alleles
 # ===========================================
 
-rule generatingAltGenome:
+rule generatingRefGenome:
 	input:
 		config["ref_genome"]
 	output: 
-		genome = "output/{prefix}/genome/allele{num}.fa", 
-		vcf = "output/{prefix}/genome/allele{num}.refseq2simseq.SNP.vcf"
+		genome = "output/{prefix}/genome/ref_allele{num}.fa"
+		vcf = "output/{prefix}/genome/ref_allele{num}.refseq2simseq.SNP.vcf"
 	params: 
-		#snp_count=55000
-		snp_count=2500000
+		snp_count=30000
+		#snp_count=2500000
+	log: "output/{prefix}/log/generatingRefGenome_{num}.log"	
+	singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
+	shell:
+		"""
+		mkdir -p output/{wildcards.prefix}/1_ref
+		
+		simuG \
+			-refseq {input} \ 
+			-snp_count {params.snp_count} \ 
+			-prefix output/{wildcards.prefix}/genome/ref_allele{wildcards.num} &> {log}
+
+		mv output/{wildcards.prefix}/genome/ref_allele{wildcards.num}.simseq.genome.fa {output.genome}
+		"""	
+
+
+rule generatingAltGenome:
+	input:
+		"output/{prefix}/genome/ref_allele{num}.fa"
+	output: 
+		genome = "output/{prefix}/genome/alt_allele{num}.fa", 
+		vcf = "output/{prefix}/genome/alt_allele{num}.refseq2simseq.SNP.vcf"
+	params: 
+		snp_count=30000
+		#snp_count=2500000
 	log: "output/{prefix}/log/generatingAltGenome_{num}.log"
 	singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
 	shell:
@@ -45,7 +69,7 @@ rule generatingAltGenome:
 
 rule noSnp:
 	input: 
-		expand("output/{{prefix}}/genome/allele{num}.refseq2simseq.SNP.vcf", num = [1, 2])
+		expand("output/{{prefix}}/genome/alt_allele{num}.refseq2simseq.SNP.vcf", num = [1, 2])
 	output: 
 		"output/{prefix}/genome/noSNP.txt"
 	params:
@@ -63,11 +87,11 @@ rule noSnp:
 
 rule getTranscriptome:
 	input:
-		genome = "output/{prefix}/genome/allele{num}.fa",
+		genome = "output/{prefix}/genome/{genomeType}_allele{num}.fa",
 		gtf = config["annotation_gtf"]
-	output: temp("output/{prefix}/transcriptome/allele{num}.cDNA.fa")
+	output: temp("output/{prefix}/transcriptome/{genomeType}_allele{num}.cDNA.fa")
 	singularity: "docker://quay.io/biocontainers/gffread:0.12.7--hd03093a_1"
-	log: "output/{prefix}/log/getTranscriptome_{num}.log"
+	log: "output/{prefix}/log/getTranscriptome_{genomeType}_{num}.log"
 	shell:
 		"""
 		mkdir -p output/{wildcards.prefix}/transcriptome
@@ -77,25 +101,28 @@ rule getTranscriptome:
 		"""
 
 rule cutNTranscriptome:
-	input: "output/{prefix}/transcriptome/allele{num}.cDNA.fa"
-	output: temp("output/{prefix}/transcriptome/allele{num}.cDNA.cutN.fa")
-	log: "output/{prefix}/log/cutNTranscriptome_{num}.log"
+	input: "output/{prefix}/transcriptome/{genomeType}_allele{num}.cDNA.fa"
+	output: temp("output/{prefix}/transcriptome/{genomeType}_allele{num}.cDNA.cutN.fa")
+	log: "output/{prefix}/log/cutNTranscriptome_{genomeType}_{num}.log"
 	shell:
 		"sed '/^>/! s/[^AGCT]//g' {input} > {output} 2> {log}"
 
 rule generateExpressionProfile:
 	input: 
-		genome = "output/{prefix}/transcriptome/allele1.cDNA.cutN.fa",
+		genome = "output/{prefix}/transcriptome/ref_allele1.cDNA.cutN.fa",
 		noSnp = "output/{prefix}/genome/noSNP.txt"
 	output: 
-		"output/{prefix}/simRNA/allele1/expressionProfile.rds",
-		"output/{prefix}/simRNA/allele2/expressionProfile.rds",
+		"output/{prefix}/simRNA/allele1/alt_expressionProfile.rds",
+		"output/{prefix}/simRNA/allele2/alt_expressionProfile.rds",
+		"output/{prefix}/simRNA/allele1/ref_expressionProfile.rds",
+		"output/{prefix}/simRNA/allele2/ref_expressionProfile.rds",
 		"output/{prefix}/simRNA/expressedGene.tsv"
 	params:
-		numASE = 500,
+		numASE = 50,
 		foldChange = 10,
 		percentExpressed = 0.4,
 		depth = 10,
+		tumourContent = 0.8,
 		gene2transcript = "ref/ensembl100_transcript2gene.tsv"
 	log: "output/{prefix}/log/generateExpressionProfile.log"
 	shell:
@@ -119,25 +146,26 @@ rule generateExpressionProfile:
 
 rule simulateReadPolyester: 
 	input: 
-		expressionProfile = "output/{prefix}/simRNA/allele{num}/expressionProfile.rds",
-		transcriptome = "output/{prefix}/transcriptome/allele{num}.cDNA.cutN.fa"
+		expressionProfile = "output/{prefix}/simRNA/allele{num}/{genomeType}_expressionProfile.rds",
+		transcriptome = "output/{prefix}/transcriptome/{genomeType}_allele{num}.cDNA.cutN.fa"
 	output: 
-		temp("output/{prefix}/simRNA/allele{num}/sample_01_1.fasta"),
-		temp("output/{prefix}/simRNA/allele{num}/sample_01_2.fasta")
+		temp("output/{prefix}/simRNA/allele{num}/{genomeType}/sample_01_1.fasta"),
+		temp("output/{prefix}/simRNA/allele{num}/{genomeType}/sample_01_2.fasta")
 	log: "output/{prefix}/log/simulateReadPolyester_{num}.log"
 	shell:
 		"""
+		mkdir -p output/{wildcards.prefix}/simRNA/allele{wildcards.num}/{wildcards.genomeType}
 		scripts/polyester.R \
 			-t {input.transcriptome} \
 			-e {input.expressionProfile} \
 			-s $(($RANDOM * {wildcards.num})) \
-			-o output/{wildcards.prefix}/simRNA/allele{wildcards.num} &> {log}
+			-o output/{wildcards.prefix}/simRNA/allele{wildcards.num}/{wildcards.genomeType} &> {log}
 		"""
 
 rule catReads:
 	input: 
-		R1 = expand("output/{{prefix}}/simRNA/allele{num}/sample_01_1.fasta", num=[1,2]),
-		R2 = expand("output/{{prefix}}/simRNA/allele{num}/sample_01_2.fasta", num=[1,2])
+		R1 = expand("output/{{prefix}}/simRNA/allele{num}/{type}/sample_01_1.fasta", num=[1,2], type=["ref","genome"]),
+		R2 = expand("output/{{prefix}}/simRNA/allele{num}/{type}/sample_01_2.fasta", num=[1,2], type=["ref","genome"])
 	output: 
 		R1 = "output/{prefix}/final/rnaReads_R1.fa",
 		R2 = "output/{prefix}/final/rnaReads_R2.fa"
@@ -171,7 +199,7 @@ rule fasta2fastq:
 rule kalliso:
 	input:
 		index = config["kalliso_index"],
-		gtf_annotation = config["gtf_annotation"],
+		gtf_annotation = config["annotation_gtf"],
 		chrom_length = config["chrom_length"],
 		reads = expand("output/{{prefix}}/rnaSeq/rnaReads_R{num}.fq", num=[1,2])
 	output: 
@@ -327,7 +355,8 @@ rule nanosim:
 		temp("output/{prefix}/longRead/allele{num}_unaligned_reads.fasta")
 	threads: 35
 	params:
-		numReads = "3000000",
+		#numReads = "3000000",
+		numReads = 50000,
 		model = "ref/nanosimModel/human_NA12878_DNA_FAB49712_guppy/training"
 	log: "output/{prefix}/log/nanosim_{num}.log"
 	shell:
