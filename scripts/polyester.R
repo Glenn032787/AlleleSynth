@@ -13,18 +13,18 @@ option_list = list(
               help="Expression profile of fold change for each transcript", metavar="character"),
   make_option(c("-o", "--outdir"), type="character", default = "mBASED",
               help="Output directory name", metavar="character"),
-  make_option(c("-s", "--seed"), type="integer", default = NULL,
-              help="Seed used for polyester", metavar="character")
+  make_option(c("-r", "--readLength"), type="integer", default = NULL,
+   	      help="Read Length", metavar="character")
 )
 
 # load in options
 opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
 out <- opt$outdir
+readLength <- opt$readLength
 
 expressionProfile <- readRDS(opt$expressionProfile)
 transcriptome <- opt$transcriptome
-seed <- opt$seed
 
 fasta <- readDNAStringSet(transcriptome)
 
@@ -182,4 +182,4 @@ NB2 <- function (basemeans, size, seed = NULL)
 # Start simulation
 print("Start simulation")
 sim(transcriptome, reads_per_transcript=expressionProfile, 
-                    num_reps=c(1), readlen=150, fold_changes=matrix(1, nrow=length(fasta)),outdir=out) 
+                    num_reps=c(1), readlen=readLength, fold_changes=matrix(1, nrow=length(fasta)),outdir=out) 

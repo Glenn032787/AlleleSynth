@@ -24,7 +24,9 @@ option_list = list(
   make_option(c("-s", "--nosnp"), type="character", default = NULL,
               help="Bed file of gene with no SNP", metavar="character"),
   make_option(c("-u", "--tumorContent"), type="double", default = 1.0,
-              help="Tumor Content", metavar="character")
+              help="Tumor Content", metavar="character"),
+  make_option(c("-l", "--readLength"), type="integer", default = 150,
+	      help="Read Length", metavar="character")
 )
 
 # load in options
@@ -39,6 +41,7 @@ depth <- opt$depth
 convert <- opt$convert
 nosnp_path <- opt$nosnp
 tumorContent <- opt$tumorContent 
+readLength <- opt$readLength
 
 # Read in transcriptome
 fasta <- readDNAStringSet(transcriptome)
@@ -49,7 +52,7 @@ nosnp <- read_delim(nosnp_path, show_col_types = F, col_names = F) %>%
 fold_changes1 = matrix(1, nrow=length(fasta))
 fold_changes2 = matrix(1, nrow=length(fasta))
 
-readspertx <- round(depth * tumorContent * width(fasta) / 100)
+readspertx <- round(depth * tumorContent * width(fasta) / readLength)
 
 # Get transcript to gene table
 transcriptGene <- tibble(original = names(fasta)) %>%
@@ -101,18 +104,18 @@ expressedGene <- convertList %>%
   dplyr::select(-original)
 
 
-saveRDS(c(fold_changes1), paste0(out, "/allele1/expressionProfile.rds"))
-saveRDS(c(fold_changes2), paste0(out, "/allele2/expressionProfile.rds"))
+saveRDS(c(fold_changes1), paste0(out, "/allele1/alt_expressionProfile.rds"))
+saveRDS(c(fold_changes2), paste0(out, "/allele2/alt_expressionProfile.rds"))
 write.table(expressedGene, file = paste0(out, "/expressedGene.tsv"), row.names = F, col.names = T, quote = F, sep="\t")
 
 #### Ref genome
-readspertx_ref <- round(depth * (1 - tumorContent) * width(fasta) / 100)
+readspertx_ref <- round(depth * (1 - tumorContent) * width(fasta) / readLength)
 
 allExp_transcript <- convert(convertList, random_gene)
 allExp_ID <- match(allExp_transcript, fasta@ranges@NAMES) 
 
 allExp <- matrix(1, nrow=length(fasta))
-allExp[allExp_ID] <- readspertx[allExp_ID]
+allExp[allExp_ID] <- readspertx_ref[allExp_ID]
 
 
 saveRDS(c(allExp), paste0(out, "/allele1/ref_expressionProfile.rds"))
