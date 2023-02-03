@@ -29,9 +29,10 @@ mart <- useMart("ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl", host="ht
 conversion <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol"),
              filters    = "ensembl_gene_id",
              values     = val$gene_id,
-             mart       = mart)
+             mart       = mart)  %>%
+	dplyr::filter(hgnc_symbol != "")
 
-new_val <- left_join(val, conversion, by = c("gene_id" = "ensembl_gene_id")) %>%
+new_val <- left_join(conversion, val, by = c("ensembl_gene_id" = "gene_id")) %>%
   dplyr::select(hgnc_symbol, TPM) %>%
   `colnames<-`(c("gene", sample))
 
