@@ -5,76 +5,103 @@ rule all:
 	input:
 		expand("output/{name}/final/{file}", 
 			name = config["sample"],
-			file = ["rnaReadAlignment.bam", "phased.vcf", "expression_matrix.tsv"])
+			file = ["rnaReadAlignment.bam", "phased.vcf", "expression_matrix.tsv"]),
+		expand("output/{name}/params.txt", 
+			name = config["sample"])
+
+# ===========================================
+# Save parameter
+# ===========================================
+rule saveParams:
+	output: "output/{prefix}/params.txt"
+	params:
+		normalSNP = config["snps"]["normalSNPcount"],
+		tumorSNP = config["snps"]["tumorSNPcount"],
+		numASE = config["numASE"],
+		tumorContent = config["tumorContent"],
+		rnaReadLength = config["rnaReads"]["readLength"],
+		rnaPercentExpressed = config["rnaReads"]["percentExpressed"],
+		rnaDepth = config["rnaReads"]["depth"],
+		rnaASEfoldChange = config["rnaReads"]["ASEfoldchange"],
+		simulatePhasing = config["simulatePhasing"],
+		wasp = config["WASPfilter"],
+		longRead = config["longRead"]["numReads"],
+		refGenome = config["ref_genome"],
+		nanosim_model = config["nanosim_model"]
+	log: "output/{prefix}/log/params.txt"
+	shell:
+		"""
+		date >> {output}
+		printf "{wildcards.prefix}\n------------------------\n\n" >> {output} 2> {log}
+		echo "Reference Genome: {params.refGenome}" >> {output}
+		echo "" >> {output}
+		echo "Number of SNP in normal: {params.normalSNP}" >> {output}
+		echo "Number of SNP in tumor: {params.tumorSNP}" >> {output}
+		echo "Tumor Content: {params.tumorContent}" >> {output}
+		echo "" >> {output}
+		echo "Number of ASE genes: {params.numASE}" >> {output}
+		echo "ASE fold change: {params.rnaASEfoldChange}" >> {output}
+		echo "" >> {output}
+		echo "RNA Read Parameter:" >> {output}
+		echo "    Read Length: {params.rnaReadLength}" >> {output}
+		echo "    Percentage gene expressed: {params.rnaPercentExpressed}" >> {output}
+		echo "    RNA depth: {params.rnaDepth}" >> {output}
+		echo "Long Read parameter:" >> {output}
+		echo "    Number of reads: {params.longRead}" >> {output}
+		echo "    Nanosim model: {params.nanosim_model}" >> {output}
+		echo "" >> {output}
+		echo "Simulate phasing: {params.simulatePhasing}" >> {output}
+		echo "Use WASP filter: {params.wasp}" >> {output}
+		"""
+
 
 
 # ===========================================
 # Generate genomes of both alleles
 # ===========================================
-if config["tumorContent"] == 1.0:
-	rule generatingAltGenome:
-		input: config["ref_genome"]
-		output: 	
-			genome = "output/{prefix}/genome/alt_allele{num}.fa",
-			vcf = "output/{prefix}/genome/alt_allele{num}.refseq2simseq.SNP.vcf"
-		params:
-			snp_count=config["snps"]["tumorSNPcount"]
-		log: "output/{prefix}/log/generatingAltGenome_{num}.log"
-		singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
-		shell:
-			"""
-			mkdir -p output/{wildcards.prefix}/genome
-			
-			simuG \
-				-refseq {input} \
-				-snp_count {params.snp_count} \
-				-prefix output/{wildcards.prefix}/genome/ref_allele{wildcards.num} &> {log}
-			"""
-else:
-	rule generatingRefGenome:
-		input:
-			config["ref_genome"]
-		output: 
-			genome = "output/{prefix}/genome/ref_allele{num}.fa",
-			vcf = "output/{prefix}/genome/ref_allele{num}.refseq2simseq.SNP.vcf"
-		params: 
-			snp_count=config["snps"]["normalSNPcount"]
-		log: "output/{prefix}/log/generatingRefGenome_{num}.log"	
-		singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
-		shell:
-			"""
-			mkdir -p output/{wildcards.prefix}/genome
-		
-			simuG \
-				-refseq {input} \
-				-snp_count {params.snp_count} \
-				-prefix output/{wildcards.prefix}/genome/ref_allele{wildcards.num} &> {log}
-
-			mv output/{wildcards.prefix}/genome/ref_allele{wildcards.num}.simseq.genome.fa {output.genome}
-			"""	
+rule generatingRefGenome:
+	input:
+		config["ref_genome"]
+	output: 
+		genome = "output/{prefix}/genome/ref_allele{num}.fa",
+		vcf = "output/{prefix}/genome/ref_allele{num}.refseq2simseq.SNP.vcf"
+	params: 
+		snp_count=config["snps"]["normalSNPcount"]
+	log: "output/{prefix}/log/generatingRefGenome_{num}.log"	
+	singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
+	shell:
+		"""
+		mkdir -p output/{wildcards.prefix}/genome
+	
+		simuG \
+			-refseq {input} \
+			-snp_count {params.snp_count} \
+			-prefix output/{wildcards.prefix}/genome/ref_allele{wildcards.num} &> {log}
+		mv output/{wildcards.prefix}/genome/ref_allele{wildcards.num}.simseq.genome.fa {output.genome}
+		"""	
 
 
-	rule generatingAltGenome:
-		input:
-			"output/{prefix}/genome/ref_allele{num}.fa"
-		output: 
-			genome = "output/{prefix}/genome/alt_allele{num}.fa", 
-			vcf = "output/{prefix}/genome/alt_allele{num}.refseq2simseq.SNP.vcf"
-		params: 
-			snp_count=config["snps"]["tumorSNPcount"]
-		log: "output/{prefix}/log/generatingAltGenome_{num}.log"
-		singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
-		shell:
-			"""
-			mkdir -p output/{wildcards.prefix}/genome
-		
-			simuG \
-				-refseq {input} \
-				-snp_count {params.snp_count} \
-				-prefix output/{wildcards.prefix}/genome/alt_allele{wildcards.num} &> {log}
-		
-			mv output/{wildcards.prefix}/genome/alt_allele{wildcards.num}.simseq.genome.fa {output.genome}
-			"""	
+rule generatingAltGenome:
+	input:
+		"output/{prefix}/genome/ref_allele{num}.fa"
+	output: 
+		genome = "output/{prefix}/genome/alt_allele{num}.fa", 
+		vcf = "output/{prefix}/genome/alt_allele{num}.refseq2simseq.SNP.vcf"
+	params: 
+		snp_count=config["snps"]["tumorSNPcount"]
+	log: "output/{prefix}/log/generatingAltGenome_{num}.log"
+	singularity: "docker://quay.io/biocontainers/simug:1.0.0--hdfd78af_1"
+	shell:
+		"""
+		mkdir -p output/{wildcards.prefix}/genome
+	
+		simuG \
+			-refseq {input} \
+			-snp_count {params.snp_count} \
+			-prefix output/{wildcards.prefix}/genome/alt_allele{wildcards.num} &> {log}
+	
+		mv output/{wildcards.prefix}/genome/alt_allele{wildcards.num}.simseq.genome.fa {output.genome}
+		"""	
 
 rule noSnp:
 	input: 
@@ -351,7 +378,7 @@ if not config["simulatePhasing"]:
 			alleleOne = "output/{prefix}/genome/allele1.phased.vcf",
 			alleleTwo = "output/{prefix}/genome/allele2.phased.vcf"
 		output:
-			"output/{prefix}/final/phased.vcf"
+			"output/{prefix}/final/phased.vcf.gz"
 		params:
 			index = config["picardIndex"] 
 		singularity: "docker://quay.io/biocontainers/picard:2.27.1--hdfd78af_0"
@@ -362,7 +389,7 @@ if not config["simulatePhasing"]:
 					I={input.alleleOne} \
 					I={input.alleleTwo} \
 					O={output} \
-				D={params.index} 2> {log}
+					D={params.index} 2> {log}
 			"""
 
 # ====================================
@@ -437,12 +464,11 @@ if config["simulatePhasing"]:
 	rule clair3:
 		input: "output/{prefix}/longRead/nanoporeAlignment.sorted.bam"
 		output: 
-			"output/{prefix}/clair3/phased_merge_output.vcf",
-			"output/{prefix}/final/phased.vcf"
+			"output/{prefix}/final/phased.vcf.gz"
 		threads: 72
 		singularity: "docker://hkubal/clair3:latest"
 		params:
-			ref = "/gsc/resources/Homo_sapiens_genomes/hg38_no_alt/genome/fasta/hg38_no_alt.fa"
+			ref = config["ref_genome"]
 		log: "output/{prefix}/log/clair3.log"
 		shell:
 			"""
@@ -459,8 +485,7 @@ if config["simulatePhasing"]:
 				--output=${{output}} \
 				--enable_phasing &> {log}
 			
-			gunzip output/{wildcards.prefix}/clair3/phased_merge_output.vcf.gz	
-			cp output/{wildcards.prefix}/clair3/phased_merge_output.vcf output/{wildcards.prefix}/final/phased.vcf
+			cp output/{wildcards.prefix}/clair3/phased_merge_output.vcf.gz output/{wildcards.prefix}/final/phased.vcf.gz
 			"""
 
 
