@@ -3,13 +3,13 @@ snps:
     tumorSNPcount: 1000 #20000 # 1000 
 
 numASE: 50 #500
-tumorContent:  0.8
+tumorContent:  1.0
 
 rnaReads:
     readLength: 150
     percentExpressed: 0.4
     depth: 10 
-    ASEfoldchange: 10 # x reads for ASE genes
+    ASEfoldchange: 2 # x reads for ASE genes
 
 
 simulatePhasing: FALSE # Simulates long read for phasing (takes much longer), else use perfect phasing

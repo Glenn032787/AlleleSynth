@@ -1,0 +1,14 @@
+ref_genome:
+    #"ref/hg38_no_alt.fa"
+    "ref/chr22.fa"
+nanosim_model:
+    "/projects/glchang_prj/software/NanoSim/pre-trained_models/human_NA12878_DNA_FAB49712_guppy/training"
+annotation_gtf:
+    #"/projects/alignment_references/Homo_sapiens/hg38_no_alt/annotations/ensembl100/Homo_sapiens.GRCh38.100.remapped.gtf"
+    "/projects/koneill_scratch/pog_tmp/ase_simulation/ref/chr22.gtf"
+kalliso_index:
+    "/projects/glchang_prj/ref/kallisto/hg38_ensembl100" # Generated from "kallisto index" on cDNA
+chrom_length:
+    "/projects/glchang_prj/ref/hg38/hg38_no_alt.genome.length" # Two column tab sepperated file of chromosome name and length
+picardIndex:
+    "/projects/glchang_prj/ref/picard/hg38_no_alt.fa.dict" # Generated from "java -jar picard.jar CreateSequenceDictionary" on reference genome
