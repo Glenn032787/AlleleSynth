@@ -21,8 +21,8 @@ option_list = list(
               help="Read Depth", metavar="character"),
   make_option(c("-c", "--convert"), type="character", default = NULL,
               help="Gene to Transcript TSV", metavar="character"),
-  make_option(c("-s", "--nosnp"), type="character", default = NULL,
-              help="Bed file of gene with no SNP", metavar="character"),
+  make_option(c("-s", "--snp"), type="character", default = NULL,
+              help="Bed file of genes with SNP", metavar="character"),
   make_option(c("-u", "--tumorContent"), type="double", default = 1.0,
               help="Tumor Content", metavar="character"),
   make_option(c("-l", "--readLength"), type="integer", default = 150,
@@ -39,13 +39,13 @@ foldChange <- opt$fold
 percentExpressed <- opt$expressed
 depth <- opt$depth
 convert <- opt$convert
-nosnp_path <- opt$nosnp
+snp_path <- opt$snp
 tumorContent <- opt$tumorContent 
 readLength <- opt$readLength
 
 # Read in transcriptome
 fasta <- readDNAStringSet(transcriptome)
-nosnp <- read_delim(nosnp_path, show_col_types = F, col_names = F) %>%
+snp <- read_delim(snp_path, show_col_types = F, col_names = F) %>%
   pull(X4)
 
 # Generate baseline expression matrix (based on length)
@@ -62,7 +62,7 @@ transcriptGene <- tibble(original = names(fasta)) %>%
 convertList <- read_delim(convert) %>%
   dplyr::filter(transcript %in% transcriptGene$transcript) %>%
   left_join(transcriptGene) %>%
-  dplyr::filter(!(hgnc_symbol %in% nosnp))
+  dplyr::filter((hgnc_symbol %in% nosnp))
 
 # Randomly select genes to express and ASE
 genelst <- pull(convertList, hgnc_symbol) %>% unique()
@@ -111,7 +111,7 @@ write.table(expressedGene, file = paste0(out, "/expressedGene.tsv"), row.names =
 #### Ref genome
 readspertx_ref <- round(depth * (1 - tumorContent) * width(fasta) / readLength)
 
-allExp_transcript <- convert(convertList, random_gene)
+allExp_transcript <- convert(convertList, Exp_gene)
 allExp_ID <- match(allExp_transcript, fasta@ranges@NAMES) 
 
 allExp <- matrix(1, nrow=length(fasta))

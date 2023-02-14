@@ -1,11 +1,10 @@
 configfile: "config/refPaths.yaml"
 configfile: "config/params.yaml"
-
 rule all:
 	input:
 		expand("output/{name}/final/{file}", 
 			name = config["sample"],
-			file = ["rnaReadAlignment.bam", "phased.vcf", "expression_matrix.tsv"]),
+			file = ["rnaReadAlignment.bam", "phased.vcf.gz", "expression_matrix.tsv"]),
 		expand("output/{name}/params.txt", 
 			name = config["sample"])
 
@@ -103,18 +102,18 @@ rule generatingAltGenome:
 		mv output/{wildcards.prefix}/genome/alt_allele{wildcards.num}.simseq.genome.fa {output.genome}
 		"""	
 
-rule noSnp:
+rule snpRegion:
 	input: 
 		expand("output/{{prefix}}/genome/alt_allele{num}.refseq2simseq.SNP.vcf", num = [1, 2])
 	output: 
-		"output/{prefix}/genome/noSNP.txt"
+		"output/{prefix}/genome/SNP.txt"
 	params:
 		geneBed = "ref/biomart_ensembl100_GRCh38.sorted.bed.gz"
 	singularity: "docker://quay.io/biocontainers/bedtools:2.23.0--h5b5514e_6"
-	log: "output/{prefix}/log/noSNP.log"
+	log: "output/{prefix}/log/snpRegion.log"
 	shell:
 		"""
-		bedtools intersect -a {params.geneBed} -b {input} -v > {output} 2> {log}
+		bedtools intersect -u -a {params.geneBed} -b {input} > {output} 2> {log}
 		"""
 
 #########################
@@ -132,6 +131,7 @@ rule getTranscriptome:
 		"""
 		mkdir -p output/{wildcards.prefix}/transcriptome
 		gffread \
+			--no-pseudo \
 			-w {output} \
 			-g {input.genome} {input.gtf}
 		"""
@@ -146,7 +146,7 @@ rule cutNTranscriptome:
 rule generateExpressionProfile:
 	input: 
 		genome = "output/{prefix}/transcriptome/ref_allele1.cDNA.cutN.fa",
-		noSnp = "output/{prefix}/genome/noSNP.txt"
+		Snp = "output/{prefix}/genome/SNP.txt"
 	output: 
 		"output/{prefix}/simRNA/allele1/alt_expressionProfile.rds",
 		"output/{prefix}/simRNA/allele2/alt_expressionProfile.rds",
@@ -175,7 +175,7 @@ rule generateExpressionProfile:
 			-e {params.percentExpressed} \
 			-d {params.depth} \
 			-c {params.gene2transcript} \
-			-s {input.noSnp} \
+			-s {input.Snp} \
 			-u {params.tumorContent} \
 			-l {params.readLength} \
 			-o output/{wildcards.prefix}/simRNA &> {log}
@@ -286,7 +286,7 @@ if config["WASPfilter"]:
 		input:
 			r1="output/{prefix}/rnaSeq/rnaReads_R1.fq",
 			r2="output/{prefix}/rnaSeq/rnaReads_R2.fq",
-			phased_vcf="output/{prefix}/final/phased.vcf"
+			phased_vcf="output/{prefix}/final/phased.vcf.gz"
 		output:
 			"output/{prefix}/star/starAligned.sortedByCoord.out.bam",
 			temp("output/{prefix}/star/starAligned.toTranscriptome.out.bam")
@@ -298,6 +298,7 @@ if config["WASPfilter"]:
 		shell:
 			"""
 			mkdir -p output/{wildcards.prefix}/star
+			zcat {input.phased_vcf} > output/{wildcards.prefix}/star/phased.vcf
 			STAR \
 				--genomeDir {params.ref} \
 				--runThreadN {threads} \
@@ -307,7 +308,7 @@ if config["WASPfilter"]:
 				--outSAMunmapped Within \
 				--outSAMattributes Standard \
 				--waspOutputMode SAMtag \
-				--varVCFfile {input.phased_vcf} \
+				--varVCFfile output/{wildcards.prefix}/star/phased.vcf \
 				--quantMode TranscriptomeSAM \
 				--twopassMode Basic \
 				--twopass1readsN -1 &> {log}
