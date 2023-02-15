@@ -62,7 +62,7 @@ transcriptGene <- tibble(original = names(fasta)) %>%
 convertList <- read_delim(convert) %>%
   dplyr::filter(transcript %in% transcriptGene$transcript) %>%
   left_join(transcriptGene) %>%
-  dplyr::filter((hgnc_symbol %in% nosnp))
+  dplyr::filter((hgnc_symbol %in% snp))
 
 # Randomly select genes to express and ASE
 genelst <- pull(convertList, hgnc_symbol) %>% unique()
