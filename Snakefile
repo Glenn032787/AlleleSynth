@@ -160,7 +160,7 @@ rule generateExpressionProfile:
 		depth = config["rnaReads"]["depth"],
 		tumorContent = config["tumorContent"],
 		readLength = config["rnaReads"]["readLength"],
-		gene2transcript = "ref/ensembl100_transcript2gene.tsv"
+		gene2transcript = config["ensembl2hgnc"]
 	log: "output/{prefix}/log/generateExpressionProfile.log"
 	singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 	shell:
@@ -263,8 +263,8 @@ if not config["WASPfilter"]:
 				-i {input.index} \
 				-g {input.gtf_annotation} \
 				-c {input.chrom_length} \
-					--genomebam \
-					-o output/{wildcards.prefix}/rnaSeq \
+				--genomebam \
+				-o output/{wildcards.prefix}/rnaSeq \
 				-t {threads} \
 					{input.reads} &> {log}
 			mv output/{wildcards.prefix}/rnaSeq/pseudoalignments.bam output/{wildcards.prefix}/final/rnaReadAlignment.bam
@@ -275,10 +275,16 @@ if not config["WASPfilter"]:
 		input: "output/{prefix}/rnaSeq/abundance.h5"
 		output: "output/{prefix}/final/expression_matrix.tsv"
 		log: "output/{prefix}/log/expressionMatrix.log"
+		params:
+			annotation = config["ensembl2hgnc"]
 		singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 		shell:
 			"""
-			Rscript scripts/expressionMatrix.R -p {wildcards.prefix} -a {input} -o output/{wildcards.prefix}/rnaSeq &> {log}
+			Rscript scripts/kallistoExpressionMatrix.R \
+				-p {wildcards.prefix} \
+				-a {input} \
+				-o output/{wildcards.prefix}/rnaSeq \
+				-e {params.annotation} &> {log}
 			mv output/{wildcards.prefix}/rnaSeq/expressionMatrix.tsv {output}
 			"""
 # =======================================
