@@ -162,13 +162,14 @@ rule generateExpressionProfile:
 		readLength = config["rnaReads"]["readLength"],
 		gene2transcript = "ref/ensembl100_transcript2gene.tsv"
 	log: "output/{prefix}/log/generateExpressionProfile.log"
+	singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 	shell:
 		"""
 		mkdir -p output/{wildcards.prefix}/simRNA/allele1
 		mkdir -p output/{wildcards.prefix}/simRNA/allele2
 		mkdir -p output/{wildcards.prefix}/final
 
-		scripts/polyesterGenerateProfile.R \
+		Rscript scripts/polyesterGenerateProfile.R \
 			-t {input.genome} \
 			-n {params.numASE} \
 			-f {params.foldChange} \
@@ -193,10 +194,11 @@ rule simulateReadPolyester:
 	log: "output/{prefix}/log/simulateReadPolyester_{genomeType}_{num}.log"
 	params:
 		readLength = config["rnaReads"]["readLength"]
+	singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 	shell:
 		"""
 		mkdir -p output/{wildcards.prefix}/simRNA/allele{wildcards.num}/{wildcards.genomeType}
-		scripts/polyester.R \
+		Rscript scripts/polyester.R \
 			-t {input.transcriptome} \
 			-e {input.expressionProfile} \
 			-r {params.readLength} \
@@ -273,9 +275,10 @@ if not config["WASPfilter"]:
 		input: "output/{prefix}/rnaSeq/abundance.h5"
 		output: "output/{prefix}/final/expression_matrix.tsv"
 		log: "output/{prefix}/log/expressionMatrix.log"
+		singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 		shell:
 			"""
-			scripts/expressionMatrix.R -p {wildcards.prefix} -a {input} -o output/{wildcards.prefix}/rnaSeq &> {log}
+			Rscript scripts/expressionMatrix.R -p {wildcards.prefix} -a {input} -o output/{wildcards.prefix}/rnaSeq &> {log}
 			mv output/{wildcards.prefix}/rnaSeq/expressionMatrix.tsv {output}
 			"""
 # =======================================
@@ -350,8 +353,9 @@ if config["WASPfilter"]:
 		input: "output/{prefix}/rsem/star.genes.results"
 		output: "output/{prefix}/final/expression_matrix.tsv"
 		log: "output/{prefix}/log/rsemExpressionMatrix.log"
+		singularity: "docker://glenn032787/asesim_rcontainer:1.0"
 		shell:
-			"scripts/generateExpressionMatrix.R -i {input} -o output/{wildcards.prefix}/final -s {wildcards.prefix} &> {log}"
+			"Rscript scripts/generateExpressionMatrix.R -i {input} -o output/{wildcards.prefix}/final -s {wildcards.prefix} &> {log}"
 
 
 # =======================================
@@ -406,12 +410,10 @@ if config["simulatePhasing"]:
 		params:
 			numReads = config["longRead"]["numReads"],
 			model = config["nanosim_model"]
+		singularity: "docker://glenn032787/nanosim:1.5"
 		log: "output/{prefix}/log/nanosim_{num}.log"
 		shell:
 			"""
-			eval "$(conda shell.bash hook)"
-			conda activate nanosim
-
 			mkdir -p output/{wildcards.prefix}/longRead
 
 			simulator.py genome \
