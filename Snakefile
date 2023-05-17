@@ -108,7 +108,7 @@ rule snpRegion:
 	output: 
 		"output/{prefix}/genome/SNP.txt"
 	params:
-		geneBed = "ref/biomart_ensembl100_GRCh38.sorted.bed.gz"
+		geneBed = config["gene_annotation"]
 	singularity: "docker://quay.io/biocontainers/bedtools:2.23.0--h5b5514e_6"
 	log: "output/{prefix}/log/snpRegion.log"
 	shell:
