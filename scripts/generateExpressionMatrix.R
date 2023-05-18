@@ -19,7 +19,7 @@ input <- opt$input
 sample <- opt$sample
 
 
-val <- read_delim(input) %>%
+val <- read_delim(input, delim = "\t") %>%
   dplyr::select(gene_id, TPM)
 
 mart <- useMart("ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl", host="https://apr2020.archive.ensembl.org")
