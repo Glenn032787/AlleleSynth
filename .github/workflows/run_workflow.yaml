@@ -20,7 +20,7 @@ jobs:
       - name: Install Conda environment from environment.yml
         uses: mamba-org/provision-with-micromamba@main 
         with:
-          environment-file: .github/environment.yml
+          environment-file: .github/environment.yaml
       - name: Run workflow
         run: | 
           snakemake -c 1 --use-singularity --configfiles test/config/params.yaml test/config/refPaths.yaml --config sample=["exampleSample"]
