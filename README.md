@@ -1,9 +1,23 @@
 <img src="res/allelesynth.png"  alt="logo" width=70%>
 
 # AlleleSynth
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.6.0-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
+
 This Snakemake workflow generates allele specific expression data for validation purposes. This workflow outputs RNA alignment file containing know ASE genes for a ground truth set. Additionally, a phased VCF and expression matrix is also generated. This workflow was used to validate the IMPALA software which can be found [here](https://github.com/bcgsc/IMPALA).
 
-# Table of content
+Table of Contents
+=================
+
+* **[Overall Workflow](#overall-workflow)**
+* **[Installation](#installation)**
+  * [Dependencies](#dependencies)
+* **[Input Files](#input)**
+* **[Output Files](#output)**
+* **[Running Workflow](#running-the-workflow)**
+  * [Edit config file](#edit-the-config-files)
+  * [Running snakemake workflow](#running-snakemake)
+* **[Contributors](#contributors)**
+* **[License](#license)**
 
 # Overall workflow
 ![Workflow](res/workflow.svg)
@@ -110,7 +124,7 @@ picardIndex:
     "/path/to/picard/index" 
 ```
 
-# Running the workflow
+# Running snakemake
 This is the command to run it with singularity. The -c parameter can be used to specify maximum number of threads. The -B parameter is used to speceify paths for the docker container to bind. The sample parameter specifies the sample name, listing multiple sample name will generate multiple sets of ASE data. 
 
 ```
@@ -126,7 +140,7 @@ The pipeline was originnally written by [Glenn Chang](https://github.com/Glenn03
   <img src="https://contrib.rocks/image?repo=Glenn032787/AlleleSynth&max=1000" />
 </a>
 
-# Liscence 
+# License 
 `AlleleSynth` is licensed under the terms of the [GNU GPL v3](LICENSE).
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
