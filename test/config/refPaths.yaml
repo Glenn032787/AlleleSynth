@@ -2,7 +2,7 @@ ref_genome:
     "ref/chr22.fa"
 
 nanosim_model:
-    "ref/nanosimModel/human_NA12878_DNA_FAB49712_guppy"
+    "ref/nanosimModel/human_NA12878_DNA_FAB49712_guppy/training"
 
 annotation_gtf:
     "ref/chr22.gtf"
