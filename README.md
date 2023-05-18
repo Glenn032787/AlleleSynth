@@ -1,4 +1,4 @@
-<img src="res/allelesynth.png"  alt="logo" width=70%>
+<img src="res/allelesynth.png"  alt="logo" width=50%>
 
 # AlleleSynth
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.6.0-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
