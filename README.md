@@ -1,4 +1,5 @@
-![Logo](res/allelesynth.png)
+<img src="res/allelesynth.png"  alt="logo" width=70%>
+
 # AlleleSynth
 This Snakemake workflow generates allele specific expression data for validation purposes. This workflow outputs RNA alignment file containing know ASE genes for a ground truth set. Additionally, a phased VCF and expression matrix is also generated. This workflow was used to validate the IMPALA software which can be found [here](https://github.com/bcgsc/IMPALA).
 
@@ -116,10 +117,9 @@ This is the command to run it with singularity. The -c parameter can be used to 
 snakemake -c 30 --use-singularity --singularity-args "-B /projects,/home,/gsc" --config sample=["sampleName1", "sampleName2"]
 ```
 # Contributors
-The pipeline was originnally written by [Glenn Chang](https://github.com/Glenn032787/) with the help and input from :
+The pipeline was originnally written by [Glenn Chang](https://github.com/Glenn032787/) with the help and input from:
 
 - Members of the Jones lab (Canada's Michael Smith Genome Sciences Centre, Vancouver, Canada).
-
 - Special thanks to Steven Jones, Kieran O'Niell, Vannessa Porter and Luka Cuilibrk
 
 <a href="https://github.com/Glenn032787/AlleleSynth/graphs/contributors">
