@@ -1,0 +1,14 @@
+ref_genome:
+    "ref/chr22.fa"
+
+nanosim_model:
+    "ref/nanosimModel/human_NA12878_DNA_FAB49712_guppy"
+
+annotation_gtf:
+    "ref/chr22.gtf"
+
+gene_annotation:
+    "ref/biomart_ensembl100_GRCh38.sorted.bed.gz"
+
+ensembl2hgnc:
+    "ref/ensembl100_transcript2gene.tsv"
