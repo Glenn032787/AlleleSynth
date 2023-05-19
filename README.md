@@ -1,6 +1,7 @@
 <img src="res/allelesynth.png"  alt="logo" width=50%>
 
 # AlleleSynth
+[![Build](https://github.com/Glenn032787/AlleleSynth/actions/workflows/run_workflow.yaml/badge.svg)](https://github.com/Glenn032787/AlleleSynth/actions/workflows/run_workflow.yaml)
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.6.0-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
 
 This Snakemake workflow generates allele specific expression data for validation purposes. This workflow outputs RNA alignment file containing know ASE genes for a ground truth set. Additionally, a phased VCF and expression matrix is also generated. This workflow was used to validate the IMPALA software which can be found [here](https://github.com/bcgsc/IMPALA).
