@@ -32,5 +32,5 @@ jobs:
           snakemake -c 1 --use-singularity --configfiles test/config/params.yaml test/config/refPaths.yaml --config sample=["exampleSample"]
       - name: Check output
         run: |
-          ls -lt output/exampleSample/output
+          ls -lt output/exampleSample/final
       - run: echo "🍏 This job's status is ${{ job.status }}."
