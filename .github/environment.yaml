@@ -6,3 +6,5 @@ channels:
 dependencies:
   - snakemake
   - singularity
+  - rsem
+  - star

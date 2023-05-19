@@ -16,4 +16,4 @@ simulatePhasing: TRUE # Simulates long read for phasing (takes much longer), els
 WASPfilter: TRUE # Use WASP filtering star alignment or Kalisto alignment
     
 longRead:
-    numReads: 50000
+    numReads: 1000

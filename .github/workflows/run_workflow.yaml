@@ -21,6 +21,12 @@ jobs:
         uses: mamba-org/provision-with-micromamba@main 
         with:
           environment-file: .github/environment.yaml
+      - name: Index for star
+        run: |
+          ./test/ref/star_index.sh
+      - name: Index for RSEM
+        run: | 
+          ./test/ref/rsem_index.sh
       - name: Run workflow
         run: | 
           snakemake -c 1 --use-singularity --configfiles test/config/params.yaml test/config/refPaths.yaml --config sample=["exampleSample"]
