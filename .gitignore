@@ -3,3 +3,4 @@
 .nfs*
 **/.keras/
 **/.parallel/
+**/.cache/
