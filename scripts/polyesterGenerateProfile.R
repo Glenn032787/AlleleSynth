@@ -42,7 +42,7 @@ readLength <- opt$readLength
 
 # Read in transcriptome
 fasta <- readDNAStringSet(transcriptome)
-snp <- read_delim(snp_path, show_col_types = F, col_names = F) %>%
+snp <- read_delim(snp_path, col_names = F, delim="\t") %>%
   pull(X4)
 
 # Generate baseline expression matrix (based on length)
@@ -56,7 +56,7 @@ transcriptGene <- tibble(original = names(fasta)) %>%
   separate(original, sep = " ", into=c("transcript", "cds"), fill = "right", remove = F) %>%
   dplyr::select(original, transcript)
 
-convertList <- read_delim(convert) %>%
+convertList <- read_delim(convert, delim = "\t") %>%
   dplyr::filter(transcript %in% transcriptGene$transcript) %>%
   left_join(transcriptGene) %>%
   dplyr::filter((hgnc_symbol %in% snp))

@@ -1,0 +1,19 @@
+snps:
+    normalSNPcount: 30000
+    tumorSNPcount: 1000
+
+numASE: 50
+tumorContent:  0.75
+
+rnaReads:
+    readLength: 150
+    percentExpressed: 0.4
+    depth: 5
+    ASEfoldchange: 2 # x reads for ASE genes
+
+
+simulatePhasing: TRUE # Simulates long read for phasing (takes much longer), else use perfect phasing
+WASPfilter: TRUE # Use WASP filtering star alignment or Kalisto alignment
+    
+longRead:
+    numReads: 1000

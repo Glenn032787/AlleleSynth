@@ -17,33 +17,24 @@ ensembl2hgnc:
 # Needed if WASP_filter = FALSE
 #################
 
-# Generated from "kallisto index" on cDNA
 kalliso_index:
-    "/path/to/kalliso/index" 
-
-# Two column tab sepperated file of chromosome name and length
+    "/projects/glchang_prj/ref/kallisto/hg38_ensembl100" # Generated from "kallisto index" on cDNA
 chrom_length:
-    "/path/to/chrom/length" 
+    "/projects/glchang_prj/ref/hg38/hg38_no_alt.genome.length" # Two column tab sepperated file of chromosome name and length
 
 ################
 # Needed if WASP_filter = TRUE
 ################
-
-# Generated using STAR --runMode genomeGenerate 
 STAR_index:
-    "/path/to/star/index"
-
-# Generated using rsem-prepare-reference
+    "test/ref/star/chr22"
 RSEM_index:
-    "path/to/rsem/index"
+    "test/ref/rsem/chr22"
 
 ################
 # Needed if simulatePhasing = False
 ################
-
-# Generated from "java -jar picard.jar CreateSequenceDictionary" on reference genome
 picardIndex:
-    "path/to/picard" 
+    "/projects/glchang_prj/ref/picard/hg38_no_alt.fa.dict" # Generated from "java -jar picard.jar CreateSequenceDictionary" on reference genome
 
 ################
 # Needed if simulatePhasing = True

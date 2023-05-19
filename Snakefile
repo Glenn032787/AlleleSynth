@@ -301,7 +301,7 @@ if config["WASPfilter"]:
 			temp("output/{prefix}/star/starAligned.toTranscriptome.out.bam")
 		singularity: "docker://quay.io/biocontainers/star:2.7.10a--h9ee0642_0"
 		params:
-			ref="/projects/glchang_prj/ref/star/hg38"
+			ref=config["STAR_index"]
 		log: "output/{prefix}/log/star.log"
 		threads: 20
 		shell:
@@ -339,7 +339,7 @@ if config["WASPfilter"]:
 		input: "output/{prefix}/star/starAligned.toTranscriptome.out.bam"
 		output: "output/{prefix}/rsem/star.genes.results"
 		params:
-			ref="/projects/glchang_prj/ref/RSEM/hg38_no_alt"
+			ref=config["RSEM_index"]
 		singularity: "docker://quay.io/biocontainers/rsem:1.3.3--pl5321hecb563c_4"
 		threads: 72
 		log: "output/{prefix}/log/rsem.log"
@@ -444,7 +444,7 @@ if config["simulatePhasing"]:
 		output: temp("output/{prefix}/longRead/nanoporeAlignment.sam")
 		singularity: "docker://quay.io/biocontainers/minimap2:2.24--h7132678_1"
 		params:
-			ref = "/gsc/resources/Homo_sapiens_genomes/hg38_no_alt/genome/fasta/hg38_no_alt.fa"
+			ref = config["ref_genome"]
 		log: "output/{prefix}/log/longReadAlignment.log"
 		threads: 3
 		shell:

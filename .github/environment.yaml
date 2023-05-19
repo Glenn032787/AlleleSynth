@@ -1,0 +1,10 @@
+name: testenv
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snakemake
+  - singularity
+  - rsem
+  - star
