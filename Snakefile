@@ -126,6 +126,8 @@ rule getTranscriptome:
 		gtf = config["annotation_gtf"]
 	output: temp("output/{prefix}/transcriptome/{genomeType}_allele{num}.cDNA.fa")
 	singularity: "docker://quay.io/biocontainers/gffread:0.12.7--hd03093a_1"
+	params:
+		read_length = config["rnaReads"]["readLength"]
 	log: "output/{prefix}/log/getTranscriptome_{genomeType}_{num}.log"
 	shell:
 		"""
@@ -133,6 +135,7 @@ rule getTranscriptome:
 		gffread \
 			--no-pseudo \
 			-w {output} \
+			-l $(({params.read_length} * 2)) \
 			-g {input.genome} {input.gtf}
 		"""
 
@@ -215,8 +218,8 @@ rule catReads:
 		R1 = expand("output/{{prefix}}/simRNA/allele{num}/{type}/sample_01_1.fasta", num=[1,2], type=tc),
 		R2 = expand("output/{{prefix}}/simRNA/allele{num}/{type}/sample_01_2.fasta", num=[1,2], type=tc)
 	output: 
-		R1 = "output/{prefix}/final/rnaReads_R1.fa",
-		R2 = "output/{prefix}/final/rnaReads_R2.fa"
+		R1 = temp("output/{prefix}/simRNA/rnaReads_R1.fa"),
+		R2 = temp("output/{prefix}/simRNA/rnaReads_R2.fa")
 	log: "output/{prefix}/log/catReads.log"
 	shell:
 		"""
@@ -224,6 +227,22 @@ rule catReads:
 		cat {input.R2} > {output.R2} 2> {log}
 		"""
 
+rule filterReadLength:
+	input: 
+		R1 = "output/{prefix}/simRNA/rnaReads_R1.fa",
+		R2 = "output/{prefix}/simRNA/rnaReads_R2.fa"
+	output:
+		R1 = "output/{prefix}/final/rnaReads_R1.fa",
+                R2 = "output/{prefix}/final/rnaReads_R2.fa"
+	log: "output/{prefix}/log/filterReadLength" 
+	params: 
+		read_length = config["rnaReads"]["readLength"]
+	singularity: "docker://quay.io/biocontainers/seqkit:2.4.0--h9ee0642_0"
+	shell: 
+		"""
+		seqkit seq -m {params.read_length} {input.R1} > {output.R1} 2> {log}
+		seqkit seq -m {params.read_length} {input.R2} > {output.R2} 2> {log}
+		"""
 
 # ===========================================
 # RNA-seq analysis 
